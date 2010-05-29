@@ -1,4 +1,8 @@
 Revision history for DBIx-MultiDB
 
+0.02		2010-05-29
+				Added "prepare" method, so you don't have to specify the
+				base query in the constructor.
+
 0.01    2010-05-29
         First version, released on an unsuspecting world!

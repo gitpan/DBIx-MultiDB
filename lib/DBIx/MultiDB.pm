@@ -7,35 +7,43 @@ use Carp;
 use Data::Dumper;
 use DBI;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 sub new {
     my ( $class, %param ) = @_;
 
-    my $dbh = DBI->connect( $param{dsn} );
-
-    bless { base => { %param, dbh => $dbh }, remote => [] }, $class;
+    bless { base => { %param }, remote => [] }, $class;
 }
 
 sub attach {
     my ( $self, %param ) = @_;
 
-    my $dbh = DBI->connect( $param{dsn} );
+	my $dbh = $param{dbh}
+		   || DBI->connect( $param{dsn}, $param{user}, $param{password}, { RaiseError => 1 } );
 
-    push @{ $self->{remote} }, { %param, dbh => $dbh };
+    my $data = $dbh->selectall_hashref( $param{sql}, $param{key}, );
+
+    push @{ $self->{remote} }, { %param, data => $data };
+}
+
+sub prepare {
+	my ( $self, $sql, $attr ) = @_;
+
+	$self->{base}->{sql} = $sql;
+
+	if ( defined $attr ) {
+		$self->{base}->{$_} = $attr->{$_} for keys %{$attr};
+	}
+
+	return $self;
 }
 
 sub execute {
     my $self = shift;
 
-    for my $remote ( @{ $self->{remote} } ) {
-        my $data =
-          $remote->{dbh}->selectall_hashref( $remote->{sql}, $remote->{key}, );
+    my $dbh = $self->{base}->{dbh}
+	       || DBI->connect( @{$self->{base}}{'dsn', 'user', 'password'}, { RaiseError => 1 } );
 
-        $remote->{data} = $data;
-    }
-
-    my $dbh = $self->{base}->{dbh};
     my $sql = $self->{base}->{sql};
 
     my $sth = $dbh->prepare($sql);
@@ -114,7 +122,7 @@ etc). You can even mix them!
 
 =head2 new
 
-Constructor. You must provide a dsn and sql, which is your base query.
+Constructor. You can provide a dsn and sql, which is your base query.
 
 =head2 attach
 
@@ -123,14 +131,24 @@ joined to it. For each one, you must provide a dsn, sql, and the relationship
 information (key and referenced_by). You can optionally provide a prefix
 that will be used to prevent name clashes.
 
+Please note that this will also load the attached query into memory.
+
+=head2 prepare
+
+If you didn't provide the sql to the constructor, you can do it here.
+Example:
+
+	$query->prepare('SELECT id, name, company_id FROM employee');
+	$query->execute();
+
 =head2 execute
 
-Execute the query. (This will load all the attached queries, building an
-index in memory.)
+Execute the base query.
 
 =head2 fetchrow_hashref
 
-Return a hashref, containing field names and values.
+Return a hashref, containing field names and values. The keys pointing to
+attached queries will be expanded into the attached queries' fields.
 
 =head1 AUTHOR
 

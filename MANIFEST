@@ -11,5 +11,6 @@ t/fetchrow_hashref.t
 t/init_db.sh
 t/pod-coverage.t
 t/pod.t
+t/prepare.t
 t/sample.t
 META.yml                                 Module meta-data (added by MakeMaker)
