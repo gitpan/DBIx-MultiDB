@@ -7,19 +7,27 @@ use Carp;
 use Data::Dumper;
 use DBI;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 sub new {
     my ( $class, %param ) = @_;
 
-    bless { base => { %param }, remote => [] }, $class;
+    bless { base => {%param}, remote => [] }, $class;
 }
+
+*join = \&attach;
 
 sub attach {
     my ( $self, %param ) = @_;
 
-	my $dbh = $param{dbh}
-		   || DBI->connect( $param{dsn}, $param{user}, $param{password}, { RaiseError => 1 } );
+    my $dbh = $param{dbh}
+      || DBI->connect( $param{dsn}, $param{user}, $param{password},
+        { RaiseError => 1 } );
+
+    if ( $param{references} and $param{foreign_key} ) {
+        $param{key}           = delete $param{references};
+        $param{referenced_by} = delete $param{foreign_key};
+    }
 
     my $data = $dbh->selectall_hashref( $param{sql}, $param{key}, );
 
@@ -27,32 +35,33 @@ sub attach {
 }
 
 sub prepare {
-	my ( $self, $sql, $attr ) = @_;
+    my ( $self, $sql, $attr ) = @_;
 
-	$self->{base}->{sql} = $sql;
+    my $dbh = $self->{base}->{dbh}
+      || DBI->connect( @{ $self->{base} }{ 'dsn', 'user', 'password' },
+        { RaiseError => 1 } );
 
-	if ( defined $attr ) {
-		$self->{base}->{$_} = $attr->{$_} for keys %{$attr};
-	}
+    my $sth = $dbh->prepare($sql);
 
-	return $self;
+    if ( defined $attr ) {
+        $self->{base}->{$_} = $attr->{$_} for keys %{$attr};
+    }
+
+	$self->{base}->{sth} = $sth;
+
+    return $self;
 }
 
 sub execute {
     my $self = shift;
 
-    my $dbh = $self->{base}->{dbh}
-	       || DBI->connect( @{$self->{base}}{'dsn', 'user', 'password'}, { RaiseError => 1 } );
+	if (!$self->{base}->{sth}) {
+		$self->prepare( $self->{base}->{sql} );
+	}
 
-    my $sql = $self->{base}->{sql};
+    $self->{base}->{sth}->execute();
 
-    my $sth = $dbh->prepare($sql);
-
-    $sth->execute();
-
-    $self->{base}->{sth} = $sth;
-
-	return $self;
+    return $self;
 }
 
 sub fetchrow_hashref {
@@ -62,18 +71,19 @@ sub fetchrow_hashref {
 
     my $row = $sth->fetchrow_hashref();
 
-	my %row = %{ $row }; # copy
+    my %row = %{$row};
 
     for my $remote ( @{ $self->{remote} } ) {
-		my $key   = $remote->{referenced_by};
-		my $value = $row{$key};
+        my $key   = $remote->{referenced_by};
+        my $value = $row{$key};
 
-		delete $row{$key}; # it will be replaced by the expanded data, which already includes an id
+        delete $row{$key
+          }; # it will be replaced by the expanded data, which already includes an id
 
-		my $prefix = $remote->{prefix} || '';
-		for my $k ( keys %{ $remote->{data}->{$value} } ) {
-			$row{"$prefix$k"} = $remote->{data}->{$value}->{$k};
-		}
+        my $prefix = $remote->{prefix} || '';
+        for my $k ( keys %{ $remote->{data}->{$value} } ) {
+            $row{"$prefix$k"} = $remote->{data}->{$value}->{$k};
+        }
     }
 
     return \%row;
@@ -89,26 +99,26 @@ DBIx::MultiDB - join data from multiple sources
 
 =head1 SYNOPSIS
 
-	use DBIx::MultiDB;
-	
-	my $query = DBIx::MultiDB->new(
-	    dsn => 'dbi:SQLite:dbname=/tmp/db1.db',
-	    sql => 'SELECT id, name, company_id FROM employee',
-	);
-	
-	$query->attach(
-	    prefix        => 'company_',
-	    dsn           => 'dbi:SQLite:dbname=/tmp/db2.db',
-	    sql           => 'SELECT id, name FROM company',
-	    key           => 'id',
-	    referenced_by => 'company_id',
-	);
-	
-	$query->execute();
+    use DBIx::MultiDB;
+    
+    my $query = DBIx::MultiDB->new(
+        dsn => 'dbi:SQLite:dbname=/tmp/db1.db',
+        sql => 'SELECT id, name, company_id FROM employee',
+    );
+    
+    $query->join(
+        prefix        => 'company_',
+        dsn           => 'dbi:SQLite:dbname=/tmp/db2.db',
+        sql           => 'SELECT id, name FROM company',
+        key           => 'id',
+        referenced_by => 'company_id',
+    );
+    
+    $query->execute();
 
-	while ( my $row = $query->fetchrow_hashref ) {
-		# ...
-	}
+    while ( my $row = $query->fetchrow_hashref ) {
+        # ...
+    }
 
 =head1 DESCRIPTION
 
@@ -126,6 +136,8 @@ Constructor. You can provide a dsn and sql, which is your base query.
 
 =head2 attach
 
+=head2 join
+
 Once you have a base query, you can attach multiple queries that will be
 joined to it. For each one, you must provide a dsn, sql, and the relationship
 information (key and referenced_by). You can optionally provide a prefix
@@ -138,8 +150,8 @@ Please note that this will also load the attached query into memory.
 If you didn't provide the sql to the constructor, you can do it here.
 Example:
 
-	$query->prepare('SELECT id, name, company_id FROM employee');
-	$query->execute();
+    $query->prepare('SELECT id, name, company_id FROM employee');
+    $query->execute();
 
 =head2 execute
 

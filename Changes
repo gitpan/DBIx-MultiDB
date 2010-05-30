@@ -1,8 +1,12 @@
 Revision history for DBIx-MultiDB
 
+0.03    2010-05-20
+				Attached table may specify keys as "foreign_key"/"references".
+				Accept "join" as an alias to "attach".
+
 0.02		2010-05-29
-				Added "prepare" method, so you don't have to specify the
-				base query in the constructor.
+				Added "prepare" method, so you don't have to specify the base
+				query in the constructor.
 
 0.01    2010-05-29
         First version, released on an unsuspecting world!
