@@ -1,7 +1,7 @@
 --- #YAML:1.0
 name:                DBIx-MultiDB
-version:             0.03
-abstract:            join data from multiple sources
+version:             0.04
+abstract:            join data from multiple databases
 license:             perl
 author:              
     - Nelson Ferraz <nferraz@gmail.com>

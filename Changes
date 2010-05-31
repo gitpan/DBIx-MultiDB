@@ -1,6 +1,9 @@
 Revision history for DBIx-MultiDB
 
-0.03    2010-05-20
+0.04		2010-05-31
+				Fixed bug in fetchrow_hasref; don't delete attached key
+
+0.03    2010-05-30
 				Attached table may specify keys as "foreign_key"/"references".
 				Accept "join" as an alias to "attach".
 

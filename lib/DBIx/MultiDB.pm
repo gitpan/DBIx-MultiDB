@@ -7,7 +7,7 @@ use Carp;
 use Data::Dumper;
 use DBI;
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 
 sub new {
     my ( $class, %param ) = @_;
@@ -67,9 +67,9 @@ sub execute {
 sub fetchrow_hashref {
     my $self = shift;
 
-    my $sth = $self->{base}->{sth};
+    my $row = $self->{base}->{sth}->fetchrow_hashref();
 
-    my $row = $sth->fetchrow_hashref();
+	return if !$row;
 
     my %row = %{$row};
 
@@ -77,8 +77,7 @@ sub fetchrow_hashref {
         my $key   = $remote->{referenced_by};
         my $value = $row{$key};
 
-        delete $row{$key
-          }; # it will be replaced by the expanded data, which already includes an id
+		#delete $row{$key};
 
         my $prefix = $remote->{prefix} || '';
         for my $k ( keys %{ $remote->{data}->{$value} } ) {
@@ -95,7 +94,7 @@ __END__
 
 =head1 NAME
 
-DBIx::MultiDB - join data from multiple sources
+DBIx::MultiDB - join data from multiple databases
 
 =head1 SYNOPSIS
 

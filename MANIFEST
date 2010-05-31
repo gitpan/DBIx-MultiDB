@@ -8,6 +8,7 @@ README
 t/00-load.t
 t/01-dataset.t
 t/dbh.t
+t/fetchrow_hashref-2.t
 t/fetchrow_hashref.t
 t/init_db.sh
 t/join.t

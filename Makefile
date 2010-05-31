@@ -57,11 +57,11 @@ DIRFILESEP = /
 DFSEP = $(DIRFILESEP)
 NAME = DBIx::MultiDB
 NAME_SYM = DBIx_MultiDB
-VERSION = 0.03
+VERSION = 0.04
 VERSION_MACRO = VERSION
-VERSION_SYM = 0_03
+VERSION_SYM = 0_04
 DEFINE_VERSION = -D$(VERSION_MACRO)=\"$(VERSION)\"
-XS_VERSION = 0.03
+XS_VERSION = 0.04
 XS_VERSION_MACRO = XS_VERSION
 XS_DEFINE_VERSION = -D$(XS_VERSION_MACRO)=\"$(XS_VERSION)\"
 INST_ARCHLIB = blib/arch
@@ -252,7 +252,7 @@ RCS_LABEL = rcs -Nv$(VERSION_SYM): -q
 DIST_CP = best
 DIST_DEFAULT = tardist
 DISTNAME = DBIx-MultiDB
-DISTVNAME = DBIx-MultiDB-0.03
+DISTVNAME = DBIx-MultiDB-0.04
 
 
 # --- MakeMaker macro section:
@@ -473,8 +473,8 @@ metafile : create_distdir
 	$(NOECHO) $(ECHO) Generating META.yml
 	$(NOECHO) $(ECHO) '--- #YAML:1.0' > META_new.yml
 	$(NOECHO) $(ECHO) 'name:                DBIx-MultiDB' >> META_new.yml
-	$(NOECHO) $(ECHO) 'version:             0.03' >> META_new.yml
-	$(NOECHO) $(ECHO) 'abstract:            join data from multiple sources' >> META_new.yml
+	$(NOECHO) $(ECHO) 'version:             0.04' >> META_new.yml
+	$(NOECHO) $(ECHO) 'abstract:            join data from multiple databases' >> META_new.yml
 	$(NOECHO) $(ECHO) 'license:             perl' >> META_new.yml
 	$(NOECHO) $(ECHO) 'author:              ' >> META_new.yml
 	$(NOECHO) $(ECHO) '    - Nelson Ferraz <nferraz@gmail.com>' >> META_new.yml
@@ -776,9 +776,9 @@ testdb_static :: testdb_dynamic
 # --- MakeMaker ppd section:
 # Creates a PPD (Perl Package Description) for a binary distribution.
 ppd :
-	$(NOECHO) $(ECHO) '<SOFTPKG NAME="$(DISTNAME)" VERSION="0,03,0,0">' > $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '<SOFTPKG NAME="$(DISTNAME)" VERSION="0,04,0,0">' > $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '    <TITLE>$(DISTNAME)</TITLE>' >> $(DISTNAME).ppd
-	$(NOECHO) $(ECHO) '    <ABSTRACT>join data from multiple sources</ABSTRACT>' >> $(DISTNAME).ppd
+	$(NOECHO) $(ECHO) '    <ABSTRACT>join data from multiple databases</ABSTRACT>' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '    <AUTHOR>Nelson Ferraz &lt;nferraz@gmail.com&gt;</AUTHOR>' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '    <IMPLEMENTATION>' >> $(DISTNAME).ppd
 	$(NOECHO) $(ECHO) '        <DEPENDENCY NAME="DBI" VERSION="0,0,0,0" />' >> $(DISTNAME).ppd
