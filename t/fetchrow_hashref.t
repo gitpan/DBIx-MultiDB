@@ -18,12 +18,12 @@ my $query = DBIx::MultiDB->new(
     sql => 'SELECT id, name, company_id FROM employee',
 );
 
-$query->attach(
+$query->left_join(
     prefix        => 'company_',
     dsn           => 'dbi:SQLite:dbname=/tmp/db2.db',
     sql           => 'SELECT id, name FROM company',
-    key           => 'id',
-    referenced_by => 'company_id',
+    key           => 'id',          # in this table
+    referenced_by => 'company_id',  # in base table
 );
 
 $query->execute();

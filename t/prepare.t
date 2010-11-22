@@ -17,7 +17,7 @@ my $query = DBIx::MultiDB->new(
     dsn => 'dbi:SQLite:dbname=/tmp/db1.db',
 );
 
-$query->attach(
+$query->left_join(
     prefix        => 'company_',
     dsn           => 'dbi:SQLite:dbname=/tmp/db2.db',
     sql           => 'SELECT id, name FROM company',

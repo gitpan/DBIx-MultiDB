@@ -7,31 +7,36 @@ use Carp;
 use Data::Dumper;
 use DBI;
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 sub new {
     my ( $class, %param ) = @_;
 
-    bless { base => {%param}, remote => [] }, $class;
+    bless { base => {%param}, left_join => [] }, $class;
 }
 
-*join = \&attach;
+*attach = \&left_join;
+*join   = \&left_join;
 
-sub attach {
+sub natural_join {
+}
+
+sub left_join {
     my ( $self, %param ) = @_;
 
     my $dbh = $param{dbh}
       || DBI->connect( $param{dsn}, $param{user}, $param{password},
         { RaiseError => 1 } );
 
-    if ( $param{references} and $param{foreign_key} ) {
+    if ( $param{references} and $param{key} ) {
+        $param{referenced_by} = delete $param{key};
         $param{key}           = delete $param{references};
-        $param{referenced_by} = delete $param{foreign_key};
     }
 
+    # put everything in memory
     my $data = $dbh->selectall_hashref( $param{sql}, $param{key}, );
 
-    push @{ $self->{remote} }, { %param, data => $data };
+    push @{ $self->{left_join} }, { %param, data => $data };
 }
 
 sub prepare {
@@ -67,21 +72,22 @@ sub execute {
 sub fetchrow_hashref {
     my $self = shift;
 
+    # get the base row
     my $row = $self->{base}->{sth}->fetchrow_hashref();
 
 	return if !$row;
 
+    # now we are going to attach the left_join data
+
     my %row = %{$row};
 
-    for my $remote ( @{ $self->{remote} } ) {
-        my $key   = $remote->{referenced_by};
+    for my $t ( @{ $self->{left_join} } ) {
+        my $key   = $t->{referenced_by};
         my $value = $row{$key};
 
-		#delete $row{$key};
-
-        my $prefix = $remote->{prefix} || '';
-        for my $k ( keys %{ $remote->{data}->{$value} } ) {
-            $row{"$prefix$k"} = $remote->{data}->{$value}->{$k};
+        my $prefix = $t->{prefix} || '';
+        for my $k ( keys %{ $t->{data}->{$value} } ) {
+            $row{"$prefix$k"} = $t->{data}->{$value}->{$k};
         }
     }
 
@@ -99,20 +105,39 @@ DBIx::MultiDB - join data from multiple databases
 =head1 SYNOPSIS
 
     use DBIx::MultiDB;
-    
+
+    # Example 1
+
     my $query = DBIx::MultiDB->new(
         dsn => 'dbi:SQLite:dbname=/tmp/db1.db',
         sql => 'SELECT id, name, company_id FROM employee',
     );
     
-    $query->join(
+    $query->left_join(
         prefix        => 'company_',
         dsn           => 'dbi:SQLite:dbname=/tmp/db2.db',
         sql           => 'SELECT id, name FROM company',
-        key           => 'id',
-        referenced_by => 'company_id',
+        key           => 'id',          # in this table
+        referenced_by => 'company_id',  # in base table
     );
     
+    $query->execute();
+
+    # Example 2
+
+    my $query = DBIx::MultiDB->new(
+        dsn => 'dbi:SQLite:dbname=/tmp/db1.db',
+    );
+
+    $query->left_join(
+        prefix        => 'company_',
+        dsn           => 'dbi:SQLite:dbname=/tmp/db2.db',
+        sql           => 'SELECT id, name FROM company',
+        key           => 'company_id', # in base table
+        references    => 'id',         # in this table
+    );
+
+    $query->prepare('SELECT id, name, company_id FROM employee');
     $query->execute();
 
     while ( my $row = $query->fetchrow_hashref ) {
@@ -133,6 +158,8 @@ etc). You can even mix them!
 
 Constructor. You can provide a dsn and sql, which is your base query.
 
+=head2 left_join
+
 =head2 attach
 
 =head2 join
@@ -143,6 +170,14 @@ information (key and referenced_by). You can optionally provide a prefix
 that will be used to prevent name clashes.
 
 Please note that this will also load the attached query into memory.
+
+=head2 natural_join
+
+Not yet implemented.
+
+=head2 inner_join
+
+Not yet implemented.
 
 =head2 prepare
 
@@ -164,6 +199,10 @@ attached queries will be expanded into the attached queries' fields.
 =head1 AUTHOR
 
 Nelson Ferraz, C<< <nferraz at gmail.com> >>
+
+=head1 CAVEATS
+
+The tables to be joined are stored in memory.
 
 =head1 BUGS
 
