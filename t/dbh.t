@@ -20,10 +20,9 @@ my $query = DBIx::MultiDB->new(
 );
 
 $query->left_join(
-    prefix        => 'company_',
     dbh           => DBI->connect('dbi:SQLite:dbname=/tmp/db2.db'),
-    sql           => 'SELECT id, name FROM company',
-    key           => 'id',
+    sql           => 'SELECT id AS company_id, name AS company_name FROM company',
+    key           => 'company_id',
     referenced_by => 'company_id',
 );
 
